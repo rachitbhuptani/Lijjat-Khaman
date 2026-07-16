@@ -776,11 +776,32 @@ function paymentsOn(dateStr){
 }
 function printThermal(){
   const dt=$("thermalDate").value || today();
+  const nextDay=(s=>{const d=new Date(s);d.setDate(d.getDate()+1);return d.toISOString().slice(0,10);})(dt);
   const dayOrders=orders.filter(o=>String(o.OrderDate).slice(0,10)===dt);
   const val=dayOrders.reduce((s,o)=>s+Number(o.Total),0);
-  const pay=paymentsOn(dt);
+  const pendToday=dayOrders.reduce((s,o)=>s+Math.max(Number(o.Balance),0),0);
+  // collections by mode
+  const modes={}; let payTotal=0, payN=0;
+  orders.forEach(o=>(o.Payments||[]).forEach(p=>{
+    if(String(p.date).slice(0,10)===dt){
+      payTotal+=Number(p.amount); payN++;
+      const m=p.mode||"Cash"; modes[m]=(modes[m]||0)+Number(p.amount);
+    }
+  }));
+  // deliveries
+  const dueToday=orders.filter(o=>String(o.DeliveryDate).slice(0,10)===dt);
+  const doneToday=dueToday.filter(o=>o.Delivered==="YES").length;
+  const tomorrowOrders=orders.filter(o=>String(o.DeliveryDate).slice(0,10)===nextDay && o.Delivered!=="YES");
+  const dueTomorrow=tomorrowOrders.length;
+  const prep={};
+  tomorrowOrders.forEach(o=>(o.Items||[]).forEach(it=>{ prep[it.name]=(prep[it.name]||0)+Number(it.qty); }));
+  const prepRows=Object.entries(prep).sort((a,b)=>b[1]-a[1]).map(([n,q])=>
+    `<tr><td>${n.slice(0,24)}</td><td class="r"><b>${q%1?q.toFixed(2):q}</b></td></tr>`).join("");
+  const outstanding=orders.reduce((s,o)=>s+Math.max(Number(o.Balance),0),0);
+  const modeRows=Object.entries(modes).map(([m,v])=>
+    `<tr><td>&nbsp;&nbsp;${m}</td><td class="r">Rs. ${v.toFixed(2)}</td></tr>`).join("");
   const rows=dayOrders.map(o=>
-    `<tr><td>${o.InvoiceNo.replace("INV-0000","#")}</td><td>${String(o.CustomerName).slice(0,14)}</td><td class="r">${Number(o.Total).toFixed(0)}</td></tr>`).join("");
+    `<tr><td>${o.InvoiceNo.replace("INV-0000","#")}</td><td>${String(o.CustomerName).slice(0,12)}</td><td class="r">${Number(o.Total).toFixed(0)}</td><td class="r">${Number(o.Balance)>0?Number(o.Balance).toFixed(0):"paid"}</td></tr>`).join("");
   const w=window.open("","_blank");
   w.document.write(`<!DOCTYPE html><html><head><title>Summary ${dt}</title><style>
     @page{size:80mm auto;margin:3mm}
@@ -792,6 +813,7 @@ function printThermal(){
     td{padding:1px 0}
     .r{text-align:right}
     .big{font-size:13px;font-weight:bold}
+    .sec{font-weight:bold;margin:4px 0 1px}
   </style></head><body>
     <h1>LIJJAT KHAMAN HOUSE</h1>
     <div class="c">Navrangpura, Ahmedabad</div>
@@ -800,13 +822,34 @@ function printThermal(){
     <div class="c big">DAILY SUMMARY</div>
     <div class="c">${fmtD(dt)}</div>
     <hr>
+    <div class="sec">ORDERS TODAY</div>
     <table>
-      <tr><td>Total Orders</td><td class="r big">${dayOrders.length}</td></tr>
+      <tr><td>Orders Taken</td><td class="r big">${dayOrders.length}</td></tr>
       <tr><td>Order Value</td><td class="r big">Rs. ${val.toFixed(2)}</td></tr>
-      <tr><td>Payments Received (${pay.n})</td><td class="r big">Rs. ${pay.sum.toFixed(2)}</td></tr>
+      <tr><td>Pending (today's orders)</td><td class="r">Rs. ${pendToday.toFixed(2)}</td></tr>
     </table>
     <hr>
-    ${dayOrders.length?`<table><tr><td><b>Inv</b></td><td><b>Customer</b></td><td class="r"><b>Rs.</b></td></tr>${rows}</table><hr>`:""}
+    <div class="sec">COLLECTIONS TODAY</div>
+    <table>
+      <tr><td>Received (${payN} payments)</td><td class="r big">Rs. ${payTotal.toFixed(2)}</td></tr>
+      ${modeRows}
+    </table>
+    <hr>
+    <div class="sec">DELIVERIES</div>
+    <table>
+      <tr><td>Due Today</td><td class="r">${dueToday.length}</td></tr>
+      <tr><td>Completed</td><td class="r">${doneToday}</td></tr>
+      <tr><td>Still Pending</td><td class="r big">${dueToday.length-doneToday}</td></tr>
+      <tr><td>Due Tomorrow</td><td class="r">${dueTomorrow}</td></tr>
+    </table>
+    <hr>
+    ${prepRows?`<div class="sec">PREP FOR TOMORROW (${fmtD(nextDay)})</div>
+    <table><tr><td><b>Item</b></td><td class="r"><b>Qty</b></td></tr>${prepRows}</table>
+    <hr>`:""}
+    <table><tr><td class="big">TOTAL OUTSTANDING</td><td class="r big">Rs. ${outstanding.toFixed(2)}</td></tr></table>
+    <div class="c" style="font-size:9px">(balance pending across all orders)</div>
+    <hr>
+    ${dayOrders.length?`<div class="sec">TODAY'S ORDERS</div><table><tr><td><b>Inv</b></td><td><b>Customer</b></td><td class="r"><b>Total</b></td><td class="r"><b>Bal</b></td></tr>${rows}</table><hr>`:""}
     <div class="c">Printed ${new Date().toLocaleString("en-IN")}</div>
     <script>window.onload=()=>{window.print();}<\/script>
   </body></html>`);
