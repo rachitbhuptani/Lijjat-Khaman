@@ -150,7 +150,7 @@ const LOGO_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAADnCAYAA
     <h1>Lijjat Khaman House</h1>
     <p>Advance Order &amp; Payment System</p>
     <label>Username</label>
-    <input id="lu" autocomplete="username">
+    <input id="lu" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false">
     <label>Password</label>
     <input id="lp" type="password" autocomplete="current-password">
     <div id="lerr" class="err hidden">Wrong username or password.</div>
@@ -312,7 +312,8 @@ function toast(m){ const t=document.createElement("div"); t.className="toast"; t
 window.addEventListener("DOMContentLoaded",()=>{ if(LOGO_BASE64) $("loginLogo").src=LOGO_BASE64; });
 let ROLE = "cashier";
 function doLogin(){
-  const m = USERS.find(x=>x.u===$("lu").value.trim() && x.p===$("lp").value);
+  const u=$("lu").value.trim().toLowerCase(), p=$("lp").value.trim();
+  const m = USERS.find(x=>x.u.toLowerCase()===u && x.p===p);
   if(m){ sessionStorage.setItem("lkh_auth", m.role); enterApp(); }
   else $("lerr").classList.remove("hidden");
 }
@@ -860,13 +861,13 @@ function ownerReport(){
   // orders table
   d.setFont("helvetica","bold").setFontSize(11).setTextColor(...GREEN);
   d.text("Orders in period", M, y); y+=6;
-  const cols={inv:M+2,cust:M+28,del:M+88,tot:M+120,paid:M+142,bal:M+164,st:W-M-2};
+  const cols={inv:M+2,cust:M+26,del:M+78,tot:M+96,paid:M+118,bal:M+140,st:W-M-2};
   const header=()=>{
     d.setFillColor(...GREEN); d.rect(M,y-4.5,W-2*M,7,"F");
     d.setTextColor(255).setFont("helvetica","bold").setFontSize(8);
     d.text("Invoice",cols.inv,y); d.text("Customer",cols.cust,y); d.text("Delivery",cols.del,y);
-    d.text("Total",cols.tot+12,y,{align:"right"}); d.text("Paid",cols.paid+12,y,{align:"right"});
-    d.text("Balance",cols.bal+14,y,{align:"right"}); d.text("Status",cols.st,y,{align:"right"});
+    d.text("Total",cols.tot+14,y,{align:"right"}); d.text("Paid",cols.paid+14,y,{align:"right"});
+    d.text("Balance",cols.bal+16,y,{align:"right"}); d.text("Status",cols.st,y,{align:"right"});
     y+=7;
   };
   header();
@@ -876,13 +877,13 @@ function ownerReport(){
     if(i%2){ d.setFillColor(244,248,245); d.rect(M,y-4,W-2*M,6,"F"); }
     d.setTextColor(...DARK);
     d.text(o.InvoiceNo,cols.inv,y);
-    d.text(String(o.CustomerName).slice(0,32),cols.cust,y);
+    d.text(String(o.CustomerName).slice(0,26),cols.cust,y);
     d.text(fmtD(o.DeliveryDate),cols.del,y);
-    d.text(Number(o.Total).toFixed(0),cols.tot+12,y,{align:"right"});
-    d.text(Number(o.TotalPaid).toFixed(0),cols.paid+12,y,{align:"right"});
+    d.text(Number(o.Total).toFixed(0),cols.tot+14,y,{align:"right"});
+    d.text(Number(o.TotalPaid).toFixed(0),cols.paid+14,y,{align:"right"});
     const bal=Number(o.Balance);
     if(bal>0) d.setTextColor(...RED);
-    d.text(bal.toFixed(0),cols.bal+14,y,{align:"right"});
+    d.text(bal.toFixed(0),cols.bal+16,y,{align:"right"});
     d.setTextColor(...(o.Status==="PAID"?GREEN:o.Status==="PARTIAL"?TURM:RED));
     d.text(o.Status,cols.st,y,{align:"right"});
     y+=6;
