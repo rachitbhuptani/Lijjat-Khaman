@@ -203,14 +203,17 @@ const PDF_SRC = '../Lijjat_Brochure_Final_21-08-26.pdf';
   const container = document.getElementById('pdf-container');
   try {
     const pdf = await pdfjsLib.getDocument(PDF_SRC).promise;
+    const dpr = window.devicePixelRatio || 1;
     for (let p = 1; p <= pdf.numPages; p++) {
       const page     = await pdf.getPage(p);
       const baseVP   = page.getViewport({ scale: 1 });
-      const scale    = (container.clientWidth || window.innerWidth) / baseVP.width;
+      const scale    = ((container.clientWidth || window.innerWidth) / baseVP.width) * dpr;
       const viewport = page.getViewport({ scale });
       const canvas   = document.createElement('canvas');
       canvas.width   = viewport.width;
       canvas.height  = viewport.height;
+      canvas.style.width  = (viewport.width  / dpr) + 'px';
+      canvas.style.height = (viewport.height / dpr) + 'px';
       container.appendChild(canvas);
       if (p === 1) loading.style.display = 'none';
       await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
