@@ -233,20 +233,11 @@ const PDF_SRC = '../Lijjat_Brochure_Final_21-08-26.pdf';
 /* disable right-click on PDF area */
 document.getElementById('pdf-container').addEventListener('contextmenu', e => e.preventDefault());
 
-/* ── Share link ── */
+/* ── Share via WhatsApp ── */
 document.getElementById('share-btn').addEventListener('click', () => {
-  const url = window.location.href;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => showToast('Link copied to clipboard!')).catch(() => fallbackCopy(url));
-  } else { fallbackCopy(url); }
+  const msg = `Hey! 👋 This looks really interesting — Lijjat Khaman has a corporate food-pack order option. Check out their brochure here:\n\nhttps://lijjatkhaman.com/corporate`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
 });
-function fallbackCopy(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-  document.body.appendChild(ta); ta.select();
-  document.execCommand('copy'); document.body.removeChild(ta);
-  showToast('Link copied!');
-}
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
